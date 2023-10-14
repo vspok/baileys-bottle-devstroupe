@@ -1,6 +1,6 @@
 {
-  "name": "baileys-bottle",
-  "version": "2.1.2",
+  "name": "baileys-bottle-new",
+  "version": "2.1.3",
   "description": "A little package made by deadlinecode for storing all the data from baileys in whatever database you want to use by using typeorm",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -11,13 +11,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deadlinecode/baileys-bottle.git"
+    "url": "git+https://github.com/lucasssaud/baileys-bottle-new.git"
   },
   "files": [
     "lib/**/*"
   ],
   "dependencies": {
-    "@adiwajshing/baileys": "^5.0.0",
+    "@whiskeysockets/baileys": "^6.5.0",
     "typeorm": "0.3.7"
   },
   "devDependencies": {
@@ -39,7 +39,7 @@
   "author": "deadlinecode",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/deadlinecode/baileys-bottle/issues"
+    "url": "https://github.com/lucassaud/baileys-bottle-new/issues"
   },
-  "homepage": "https://github.com/deadlinecode/baileys-bottle#readme"
+  "homepage": "https://github.com/lucassaud/baileys-bottle-new#readme"
 }
