@@ -46,10 +46,15 @@ Sure thing! You can tinker with the package like this:
    # inside your other project
    npm install /path/to/the/repo/named/baileys-bottle-new
    ```
-   or alternatively run the example
+   or alternatively run the example in typescript (ts)
    ```bash
    # inside the package folder
    npm run example
+   ```
+   or run the example in javascript (js)
+   ```bash
+   # inside the example folder
+   node example.js
    ```
 
 ## Found a bug or want to contribute because you're a cool person?
