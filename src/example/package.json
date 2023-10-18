@@ -1,0 +1,30 @@
+{
+  "name": "autoatende-db",
+  "version": "1.0.0",
+  "description": "WhatsApp Bot",
+  "main": "example.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucassaud/baileys-bottle-new.git"
+  },
+  "keywords": [
+    "whatsapp",
+    "database",
+    "session",
+    "storage",
+    "node",
+    "baileys"
+  ],
+  "author": "Lucas Marinho Saud",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lucassaud/baileys-bottle-new/issues"
+  },
+  "homepage": "https://github.com/lucassaud/baileys-bottle-new#readme",
+  "dependencies": {
+    "baileys-bottle-new": "^2.1.3"
+  }
+}
