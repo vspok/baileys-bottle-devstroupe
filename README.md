@@ -74,8 +74,5 @@ It's important so we can keep track of all the issues and feature requests that 
 
 ## You need help or want to exchange about things
 
-Well bad for you.<br/>
-Jk. <br/>
-I currently don't have a discord but you can find me in the WAWebSockets discord in the `🍸-baileys` and `🏷️-others` channels.
-
-See ya over there and thanks for using my package ^^ <3
+Contact me. lucassaud9 at gmail dot com.<br/>
+LS.<br/>
