@@ -4,6 +4,8 @@
 
 ## package updated by lucassaud
 
+If you like my work please consider donate to me. https://www.buymeacoffee.com/elsaud
+
 This package creates a store for a baileys bot instance. You can pass in a database connection to the functions and they will use that connection to create all the needed tables and save all the data to the database using typeorm, which supports all different kinds of databases.
 
 TypeORM currently supports:
