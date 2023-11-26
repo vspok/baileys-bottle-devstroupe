@@ -196,45 +196,29 @@ export default class StoreHandle {
         messages: newMessages,
         isLatest,
       }) => {
-        isLatest &&
-          (await Promise.all([
-            async () =>
-              await this.repos.messageDics.remove(
-                await this.repos.messageDics.findBy({
-                  DBAuth: { id: this.auth.id },
-                })
-              ),
-            async () =>
-              await this.repos.chats.remove(
-                await this.repos.chats.findBy({ DBAuth: { id: this.auth.id } })
-              ),
-          ]));
 
-        const oldContacts = await this.contactsUpsert(newContacts);
-        await this.repos.contacts.delete({
-          id: In(Array.from(oldContacts)),
-          DBAuth: { id: this.auth.id },
-        });
-
-        for (const msg of newMessages) {
-          const jid = msg.key.remoteJid!,
-            dictionary = await this.assertMessageList(jid);
-
-          let message: DBMessage;
-          if (
-            !(message = dictionary.messages.find(
-              (x) => x.key.id === msg.key.id
-            ))
-          ) {
-            await this.repos.messages.save({
-              ...(msg as any),
-              msgId: msg.key?.id,
-              dictionary,
-            });
-            continue;
+        if(isLatest) {
+          await this.contactsUpsert(newContacts);
+          for (const msg of newMessages) {
+            const jid = msg.key.remoteJid!,
+              dictionary = await this.assertMessageList(jid);
+  
+            let message: DBMessage;
+            if (
+              !(message = dictionary.messages.find(
+                (x) => x.key.id === msg.key.id
+              ))
+            ) {
+              await this.repos.messages.save({
+                ...(msg as any),
+                msgId: msg.key?.id,
+                dictionary,
+              });
+              continue;
+            }
+            Object.assign(message, msg);
+            await this.repos.messageDics.save(dictionary);
           }
-          Object.assign(message, msg);
-          await this.repos.messageDics.save(dictionary);
         }
       }
     );
