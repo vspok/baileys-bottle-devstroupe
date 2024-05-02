@@ -8,11 +8,11 @@ Baileys-Bottle main features are:
 - Use multiple instances at once (will be saved in the same db and tables)
 - Block delete events for chat and messages so that they don't get deleted
 
-If you have a feature request feel free [to open a ticket](https://github.com/lucassaud/baileys-bottle-new/issues/new/choose)
+If you have a feature request feel free [to open a ticket](https://github.com/lucassaud/baileys-bottle-devstroupe/issues/new/choose)
 
 ## A working example and some information on how to use this package
 
-In the [example.ts file](https://github.com/lucassaud/baileys-bottle-new/blob/master/src/example/example.ts) you can find a working implementation of this package.<br/>
+In the [example.ts file](https://github.com/lucassaud/baileys-bottle-devstroupe/blob/master/src/example/example.ts) you can find a working implementation of this package.<br/>
 You can also find some information on the internals under this section.<br/>
 I tried to keep things as similar to baileys makeInMemoryStore as far as using the functions goes.<br/>
 Please also note that for some types of database (like sqlite) you will have to install a separate package. You can find out which package you need by [reading through the typeorm documentation](https://typeorm.io/#installation) (look under "4.") or just wait for the error from typeorm which will most likely tell you that you are missing the corresponding package and shows you how you can install it.

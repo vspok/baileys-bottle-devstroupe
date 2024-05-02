@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lucassaud/baileys-bottle-new.git"
+    "url": "git+https://github.com/lucassaud/baileys-bottle-devstroupe.git"
   },
   "keywords": [
     "whatsapp",
@@ -21,10 +21,10 @@
   "author": "Lucas Marinho Saud",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/lucassaud/baileys-bottle-new/issues"
+    "url": "https://github.com/lucassaud/baileys-bottle-devstroupe/issues"
   },
-  "homepage": "https://github.com/lucassaud/baileys-bottle-new#readme",
+  "homepage": "https://github.com/lucassaud/baileys-bottle-devstroupe#readme",
   "dependencies": {
-    "baileys-bottle-new": "^2.1.3"
+    "baileys-bottle-devstroupe": "^2.1.3"
   }
 }

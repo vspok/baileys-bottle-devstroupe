@@ -17,7 +17,7 @@ import { MessageDic as DBMessageDic } from "../entity/MessageDic";
 import { PresenceDic as DBPresenceDic } from "../entity/PresenceDic";
 import { Presence as DBPresence } from "../entity/Presence";
 import { GroupMetadata as DBGroupMetadata } from "../entity/GroupMetadata";
-import { DataSource, In } from "typeorm";
+import { DataSource, In, LessThan } from "typeorm";
 import { Auth } from "../entity/Auth";
 
 export interface StoreHandleOptions {
@@ -170,21 +170,27 @@ export default class StoreHandle {
     return oldContacts;
   };
 
-  private assertMessageList = async (jid: string) =>
-    (await this.repos.messageDics.findOne({
-      where: {
-        jid,
-        DBAuth: {
-          id: this.auth.id,
+  private assertMessageList = async (jid: string) => {
+    return this.ds.transaction(async (manager) => {
+      let messageDic = await manager.findOne(DBMessageDic, {
+        where: { 
+          jid,
+          DBAuth: { id: this.auth.id }
         },
-      },
-      relations: ["messages"],
-    })) ||
-    (await this.repos.messageDics.save({
-      jid,
-      DBAuth: { id: this.auth.id },
-      messages: [],
-    }));
+        // relations: ["messages"],
+      });
+  
+      if (!messageDic) {
+        messageDic = await manager.save(DBMessageDic, {
+          jid,
+          DBAuth: this.auth,
+          // messages: [],
+        });
+      }
+  
+      return messageDic;
+    });
+  };
 
   bind = (ev: BaileysEventEmitter) => {
     ev.on("connection.update", (update) => Object.assign(this.state, update));
@@ -200,24 +206,32 @@ export default class StoreHandle {
         if(isLatest) {
           await this.contactsUpsert(newContacts);
           for (const msg of newMessages) {
-            const jid = msg.key.remoteJid!,
-              dictionary = await this.assertMessageList(jid);
-  
-            let message: DBMessage;
-            if (
-              !(message = dictionary.messages.find(
-                (x) => x.key.id === msg.key.id
-              ))
-            ) {
+            const jid = msg.key.remoteJid!;
+            
+            // Realiza a consulta diretamente no banco de dados para verificar se a mensagem já existe
+            const existingMessage = await this.repos.messages.findOne({
+              where: {
+                msgId: msg.key.id,
+                dictionary: {
+                  jid,
+                  DBAuth: { id: this.auth.id }
+                },
+              },
+            });
+
+            if (!existingMessage) {
+              // Se a mensagem não existir, salva-a no banco de dados
               await this.repos.messages.save({
                 ...(msg as any),
                 msgId: msg.key?.id,
-                dictionary,
+                dictionary: await this.assertMessageList(jid),
               });
-              continue;
+            } else {
+              
+              // Se a mensagem já existir, atualiza-a
+              Object.assign(existingMessage, msg);
+              await this.repos.messages.save(existingMessage);
             }
-            Object.assign(message, msg);
-            await this.repos.messageDics.save(dictionary);
           }
         }
       }
@@ -307,55 +321,78 @@ export default class StoreHandle {
         )
     );
     ev.on("messages.upsert", async ({ messages: newMessages, type }) => {
-      switch (type) {
-        case "append":
-        case "notify":
-          for (const msg of newMessages) {
-            const jid = jidNormalizedUser(msg.key.remoteJid!);
+      if (type !== "append" && type !== "notify") {
+        return;
+      }
+      for (const msg of newMessages) {
+          const jid = jidNormalizedUser(msg.key.remoteJid!);
 
-            var dictionary = await this.assertMessageList(jid);
+          // Verifica se a mensagem já existe no dicionário
+          const existingMessage = await this.repos.messages.findOne({
+              where: {
+                  msgId: msg.key.id,
+                  dictionary: {
+                      jid,
+                      DBAuth: { id: this.auth.id }
 
-            let message: DBMessage;
-            if (
-              !(message = dictionary.messages.find(
-                (x) => x.key.id === msg.key.id
-              ))
-            )
-              return await this.repos.messages.save({
-                ...(msg as any),
-                msgId: msg.key?.id,
-                dictionary,
+                  },
+              },
+          });
+
+          if (!existingMessage) {
+              // Se a mensagem não existir, salva-a no banco de dados
+              await this.repos.messages.save({
+                  ...(msg as any),
+                  msgId: msg.key?.id,
+                  dictionary: await this.assertMessageList(jid),
               });
-            Object.assign(message || {}, msg);
-            await this.repos.messageDics.save(dictionary);
 
-            type === "notify" &&
-              !(await this.repos.chats.findOneBy({
-                id: jid,
-                DBAuth: { id: this.auth.id },
-              })) &&
-              ev.emit("chats.upsert", [
-                {
-                  id: jid,
-                  conversationTimestamp: toNumber(msg.messageTimestamp),
-                  unreadCount: 1,
-                },
-              ]);
+              // Emite um evento de atualização do chat se for uma notificação
+              if (type === "notify") {
+                  const chat = await this.repos.chats.findOneBy({
+                      id: jid,
+                      DBAuth: { id: this.auth.id },
+                  });
+
+                  if (!chat) {
+                      ev.emit("chats.upsert", [
+                          {
+                              id: jid,
+                              conversationTimestamp: toNumber(msg.messageTimestamp),
+                              unreadCount: 1,
+                          },
+                      ]);
+                  }
+              }
+          } else {
+              // Se a mensagem já existir, atualiza-a
+              Object.assign(existingMessage, msg);
+              await this.repos.messages.save(existingMessage);
           }
-          break;
       }
     });
     ev.on("messages.update", async (updates) => {
       for (const { update, key } of updates) {
-        var dictionary = await this.assertMessageList(key.remoteJid!);
-
-        let message: DBMessage;
-        if (!(message = dictionary.messages.find((x) => x.key.id === key.id)))
-          continue;
-        Object.assign(message, update);
-        await this.repos.messageDics.save(dictionary);
+          const jid = key.remoteJid!;
+  
+          // Verifica se a mensagem existe no dicionário
+          const message = await this.repos.messages.findOne({
+              where: {
+                  msgId: key.id,
+                  dictionary: {
+                      jid,
+                      DBAuth: { id: this.auth.id }
+                  },
+              },
+          });
+  
+          if (message) {
+              // Se a mensagem existir, atualiza-a
+              Object.assign(message, update);
+              await this.repos.messages.save(message);
+          }
       }
-    });
+  });
     ev.on("messages.delete", async (item) => {
       if (this.options.disableDelete.includes("messages")) return;
       if ("all" in item) {
@@ -473,59 +510,110 @@ export default class StoreHandle {
     count: number,
     cursor: WAMessageCursor
   ): Promise<DBMessage[]> => {
-    const dictionary = await this.assertMessageList(jid),
-      mode = !cursor || "before" in cursor ? "before" : "after",
-      cursorKey = !!cursor
-        ? "before" in cursor
-          ? cursor.before
-          : cursor.after
-        : undefined,
-      cursorValue = cursorKey
-        ? dictionary.messages.find((x) => x.msgId === cursorKey.id!)
-        : undefined;
+    const dictionary = await this.repos.messageDics.findOne({
+      where: {
+        jid,
+        DBAuth: { id: this.auth.id }
+      },
+      relations: ["messages"],
+    });
 
-    let messages: DBMessage[];
-    if (dictionary && mode === "before" && (!cursorKey || cursorValue)) {
+    if (!dictionary) {
+      return [];
+    }
+
+    const mode = !cursor || "before" in cursor ? "before" : "after";
+    const cursorKey = cursor && "before" in cursor ? cursor.before : cursor?.['after'];
+    
+    const cursorValue = cursorKey
+      ? dictionary.messages.find((x) => x.msgId === cursorKey.id!)
+      : undefined;
+
+    let messages: DBMessage[] = [];
+
+    if (mode === "before" && (!cursorKey || cursorValue)) {
       if (cursorValue) {
-        const msgIdx = dictionary.messages.findIndex(
-          (m) => m.key.id === cursorKey?.id
-        );
-        messages = dictionary.messages.slice(0, msgIdx);
-      } else messages = dictionary.messages;
+        const msgIdx = dictionary.messages.findIndex((m) => m.key.id === cursorKey?.id);
+        messages = dictionary.messages.slice(Math.max(0, msgIdx - count), msgIdx);
+      } else {
+        messages = dictionary.messages;
+      }
 
       const diff = count - messages.length;
-      diff < 0 && (messages = messages.slice(-count));
-    } else {
-      messages = [];
+
+      if (diff > 0) {
+        const remainingMessages = await this.repos.messages.find({
+          where: {
+            id: In(dictionary.messages.map((msg) => msg.id)),
+            msgId: LessThan(messages[0].msgId),
+          },
+          order: {
+            msgId: "DESC",
+          },
+          take: diff,
+        });
+        messages = remainingMessages.concat(messages);
+      }
     }
 
     return messages;
   };
 
+  // loadMessage = async (
+  //   jid: string,
+  //   id: string
+  // ): Promise<DBMessage | undefined> =>
+  //   (
+  //     // await this.repos.messageDics.findOne({
+  //     //   where: {
+  //     //     jid,
+  //     //     DBAuth: { id: this.auth.id },
+  //     //   },
+  //     //   relations: ["messages"],
+  //     // })
+  //     await this.repos.messageDics.createQueryBuilder("dic")
+  //     .leftJoinAndSelect("dic.DBAuth", "auth")
+  //     .leftJoinAndSelect("dic.messages", "messages")
+  //     .where("dic.jid = :jid", { jid })
+  //     .andWhere("auth.id = :id", { id: this.auth.id })
+  //     .andWhere("messages.msgId = :id", { id })
+  //     .getOne()
+  //   )?.messages.find((x) => x.msgId === id);
   loadMessage = async (
     jid: string,
     id: string
-  ): Promise<DBMessage | undefined> =>
-    (
-      await this.repos.messageDics.findOne({
-        where: {
+  ): Promise<DBMessage | undefined> => {
+    const message = await this.repos.messages.findOne({
+      where: {
+        msgId: id,
+        dictionary: {
           jid,
-          DBAuth: { id: this.auth.id },
+          // DBAuth: this.auth,
+          DBAuth: { id: this.auth.id }
+          
         },
-        relations: ["messages"],
-      })
-    )?.messages.find((x) => x.msgId === id);
+      },
+    });
 
-  mostRecentMessage = async (jid: string): Promise<DBMessage | undefined> =>
-    (
-      await this.repos.messageDics.findOne({
-        where: {
+    return message;
+  };
+
+  mostRecentMessage = async (jid: string): Promise<DBMessage | undefined> => {
+    const message = await this.repos.messages.findOne({
+      where: {
+        dictionary: {
           jid,
-          DBAuth: { id: this.auth.id },
+          DBAuth: { id: this.auth.id }
+
         },
-        relations: ["messages"],
-      })
-    )?.messages.slice(-1)[0];
+      },
+      order: {
+        msgId: "DESC",
+      },
+    });
+
+    return message;
+ };
 
   fetchImageUrl = async (
     jid: string,
@@ -561,18 +649,22 @@ export default class StoreHandle {
     return group;
   };
 
-  fetchMessageReceipts = async ({
-    remoteJid,
-    id,
-  }: WAMessageKey): Promise<DBMessage["userReceipt"] | undefined> => {
-    const dictionary = await this.repos.messageDics.findOne({
+  fetchMessageReceipts = async ({ remoteJid, id }: WAMessageKey): Promise<DBMessage["userReceipt"] | undefined> => {
+    const receipt = await this.repos.messages.findOne({
+      // relations: {
+      //   dictionary: true,
+      // },
       where: {
-        jid: remoteJid!,
-        DBAuth: { id: this.auth.id },
+        msgId: id,
+        dictionary: {
+          jid: remoteJid,
+          DBAuth: { id: this.auth.id }
+        },
       },
-      relations: ["messages"],
+      select: ["userReceipt"],
     });
-    const msg = dictionary.messages.find((x) => x.msgId === id);
-    return msg?.userReceipt;
+
+    return receipt?.userReceipt;
   };
+
 }
