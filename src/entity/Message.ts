@@ -1,7 +1,8 @@
-import { proto } from "@whiskeysockets/baileys";
+import { proto } from "baileys";
 import {
   Column,
   Entity,
+  Long,
   ManyToOne,
   PrimaryGeneratedColumn,
   Unique,

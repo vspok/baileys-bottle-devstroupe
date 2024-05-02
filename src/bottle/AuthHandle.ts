@@ -5,8 +5,7 @@ import {
   initAuthCreds,
   proto,
   SignalDataTypeMap,
-  SignalKeyStore,
-} from "@whiskeysockets/baileys";
+} from "baileys";
 import { DataSource } from "typeorm";
 import { Auth } from "../entity/Auth";
 
@@ -20,61 +19,68 @@ const KEY_MAP: { [T in keyof SignalDataTypeMap]: string } = {
 };
 
 export default class AuthHandle {
-  private cachedState: AuthenticationState | null = null;
-
   constructor(private ds: DataSource, private key: string) {}
-
   private repos = {
     auth: this.ds.getRepository(Auth),
   };
 
-  private saveState = async (): Promise<void> => {
-    if (this.cachedState) {
-      await this.repos.auth.upsert(
+  useAuthHandle = async (): Promise<{
+    state: AuthenticationState;
+    saveState: () => Promise<any>;
+  }> => {
+    let creds: AuthenticationCreds;
+    let keys: any = {};
+
+    var existingAuth = await this.repos.auth.findOneBy({
+      key: this.key,
+    });
+    ({ creds, keys } =
+      existingAuth && existingAuth.value
+        ? JSON.parse(existingAuth.value, BufferJSON.reviver)
+        : {
+            creds: initAuthCreds(),
+            keys: {},
+          });
+
+    const saveState = () =>
+      this.repos.auth.upsert(
         {
           key: this.key,
-          value: JSON.stringify(this.cachedState, BufferJSON.replacer, 2),
+          value: JSON.stringify({ creds, keys }, BufferJSON.replacer, 2),
         },
         {
           conflictPaths: ["key"],
         }
       );
-    }
-  };
-
-  private loadState = async (): Promise<void> => {
-    const existingAuth = await this.repos.auth.findOneBy({
-      key: this.key,
-    });
-
-    if (existingAuth && existingAuth.value) {
-      const { creds, keys } = JSON.parse(
-        existingAuth.value,
-        BufferJSON.reviver
-      );
-
-      this.cachedState = { creds, keys };
-    } else {
-      this.cachedState = {
-        creds: initAuthCreds(),
-        keys: {} as SignalKeyStore,
-      };
-    }
-  };
-
-  useAuthHandle = async (): Promise<{
-    state: AuthenticationState;
-    saveState: () => Promise<void>;
-  }> => {
-    if (!this.cachedState) {
-      await this.loadState();
-    }
 
     return {
-      state: this.cachedState!,
-      saveState: async () => {
-        await this.saveState();
+      state: {
+        creds,
+        keys: {
+          get: (type, ids) => {
+            const key = KEY_MAP[type];
+            return ids.reduce((dict, id) => {
+              let value = keys[key]?.[id];
+              if (value) {
+                if (type === "app-state-sync-key")
+                  value = proto.Message.AppStateSyncKeyData.fromObject(value);
+                dict[id] = value;
+              }
+              return dict;
+            }, {});
+          },
+          set: async (data) => {
+            for (const _key in data) {
+              const key = KEY_MAP[_key as keyof SignalDataTypeMap];
+              keys[key] = keys[key] || {};
+              Object.assign(keys[key], data[_key]);
+            }
+
+            await saveState();
+          },
+        },
       },
+      saveState,
     };
   };
 }

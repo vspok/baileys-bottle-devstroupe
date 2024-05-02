@@ -17,7 +17,7 @@ export class Auth {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({unique: true})
   key: string;
 
   @Column({ type: "text" })

@@ -1,10 +1,11 @@
-import { proto } from "@whiskeysockets/baileys";
+import { proto } from "baileys";
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   Unique,
   ManyToOne,
+  Long,
 } from "typeorm";
 import { Auth } from "./Auth";
 
