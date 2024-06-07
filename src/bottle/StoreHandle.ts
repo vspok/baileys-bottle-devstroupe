@@ -662,9 +662,10 @@ export default class StoreHandle {
       DBAuth: { id: this.auth.id },
     });
     if (!group) {
-      const metadata = await sock?.groupMetadata(jid);
-      metadata &&
-        (group = await this.repos.groups.save({
+      const metadata = await sock?.groupMetadata(jid).catch((error) => 
+        console.log('fetchGroupMetadata groupMetadata error',error)
+      );
+      metadata &&  (group = await this.repos.groups.save({
           ...metadata,
           DBAuth: { id: this.auth.id },
         }));
