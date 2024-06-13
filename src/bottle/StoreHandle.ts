@@ -153,7 +153,7 @@ export default class StoreHandle {
       )?.presences.find((x) => x.participant === participant),
   };
 
-  private contactsUpsert = async (newContacts: Contact[]) => {
+  private contactsUpsert = async (newContacts: Partial<Contact>[]) => {
     // Atualiza os contatos existentes com os novos dados ou adiciona novos contatos
     for (const contact of newContacts) {
 
@@ -258,36 +258,11 @@ export default class StoreHandle {
       }
     );
     ev.on("contacts.upsert", async (contacts) => {
-      for (const contactNew of contacts) {
-        const contact = await this.repos.contacts.findOneBy({
-          id: contactNew.id!,
-          DBAuth: { id: this.auth.id },
-        });
-
-        // Se o contato existir e pertencer ao usuário autenticado, aplica a atualização
-        if (contact) {
-          await this.repos.contacts.update(contact.DBId, Object.assign(contact, contactNew));
-        } else {
-          await this.repos.contacts.save({
-            ...contactNew,
-            DBAuth: { id: this.auth.id },
-          });
-        }
-      }
+      this.contactsUpsert(contacts);
     });
     ev.on("contacts.update", async (contacts) => {
-      for (const contactUpdate of contacts) {
-        // Verifica se o contato pertence ao usuário autenticado
-        const contact = await this.repos.contacts.findOneBy({
-          id: contactUpdate.id!,
-          DBAuth: { id: this.auth.id },
-        });
-
-        // Se o contato existir e pertencer ao usuário autenticado, aplica a atualização
-        if (contact) {
-          await this.repos.contacts.update(contact.DBId, Object.assign(contact, contactUpdate));
-        }
-      }
+      this.contactsUpsert(contacts);
+      
     });
     ev.on("chats.upsert", (newChats) => {
       try {
