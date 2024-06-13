@@ -258,11 +258,21 @@ export default class StoreHandle {
       }
     );
     ev.on("contacts.upsert", async (contacts) => {
-      for (const contact of contacts) {
-        await this.repos.contacts.save({
-          ...contact,
+      for (const contactNew of contacts) {
+        const contact = await this.repos.contacts.findOneBy({
+          id: contactNew.id!,
           DBAuth: { id: this.auth.id },
         });
+
+        // Se o contato existir e pertencer ao usuário autenticado, aplica a atualização
+        if (contact) {
+          await this.repos.contacts.update(contact.DBId, Object.assign(contact, contactNew));
+        } else {
+          await this.repos.contacts.save({
+            ...contactNew,
+            DBAuth: { id: this.auth.id },
+          });
+        }
       }
     });
     ev.on("contacts.update", async (contacts) => {
