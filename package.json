@@ -1,6 +1,6 @@
 {
   "name": "baileys-bottle-devstroupe",
-  "version": "2.1.6",
+  "version": "2.1.9",
   "description": "A little package made by deadlinecode and updated by lucassaud for storing all the data from baileys in whatever database you want to use by using typeorm",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
