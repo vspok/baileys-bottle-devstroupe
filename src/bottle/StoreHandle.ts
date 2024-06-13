@@ -154,21 +154,37 @@ export default class StoreHandle {
   };
 
   private contactsUpsert = async (newContacts: Contact[]) => {
-    var contacts = await this.repos.contacts.findBy({
-      DBAuth: {
-        id: this.auth.id,
-      },
+    // Busca os contatos existentes no banco de dados
+    const contacts = await this.repos.contacts.findBy({
+        DBAuth: {
+          id: this.auth.id,
+        },
     });
-    const oldContacts = new Set(Object.keys(contacts));
+  
+    // Cria um conjunto dos IDs dos contatos existentes
+    const oldContacts = new Set(contacts.map(contact => contact.id));
+  
+    // Atualiza os contatos existentes com os novos dados ou adiciona novos contatos
     for (const contact of newContacts) {
+      // Remove o ID do contato atual do conjunto de IDs antigos
       oldContacts.delete(contact.id);
-      contacts[contact.id] = Object.assign(
-        contacts[contact.id] || ({ DBAuth: { id: this.auth.id } } as DBContact),
-        contact
-      );
+      
+      // Procura se o contato já existe pelo ID
+      const existingContactIndex = contacts.findIndex(c => c.id === contact.id);
+  
+      // Se o contato já existe, atualiza-o
+      if (existingContactIndex !== -1) {
+        contacts[existingContactIndex] = Object.assign({}, contacts[existingContactIndex], contact);
+      } else {
+        // Se não existe, adiciona-o
+        contacts.push(Object.assign({ DBAuth: { id: this.auth.id } } as DBContact, contact));
+      }
     }
-
+  
+    // Salva os contatos atualizados no banco de dados
     await this.repos.contacts.save(contacts);
+  
+    // Retorna os IDs dos contatos que foram removidos
     return oldContacts;
   };
 
@@ -254,16 +270,25 @@ export default class StoreHandle {
         // }
       }
     );
-    ev.on("contacts.update", async (updates) => {
-      for (const update of updates) {
-        let contact: DBContact;
-        if (
-          (contact = await this.repos.contacts.findOneBy({
-            id: update.id!,
-            DBAuth: { id: this.auth.id },
-          }))
-        ) {
-          Object.assign(contact, update);
+    ev.on("contacts.upsert", async (contacts) => {
+      for (const contact of contacts) {
+        await this.repos.contacts.save({
+          ...contact,
+          DBAuth: { id: this.auth.id },
+        });
+      }
+    });
+    ev.on("contacts.update", async (contacts) => {
+      for (const contactUpdate of contacts) {
+        // Verifica se o contato pertence ao usuário autenticado
+        const contact = await this.repos.contacts.findOneBy({
+          id: contactUpdate.id!,
+          DBAuth: { id: this.auth.id },
+        });
+
+        // Se o contato existir e pertencer ao usuário autenticado, aplica a atualização
+        if (contact) {
+          Object.assign(contact, contactUpdate);
           await this.repos.contacts.save(contact);
         }
       }
