@@ -157,7 +157,7 @@ export default class StoreHandle {
     // Atualiza os contatos existentes com os novos dados ou adiciona novos contatos
     for (const contact of newContacts) {
 
-      const contactsOld = await this.repos.contacts.findBy({
+      const contactsOld = await this.repos.contacts.findOneBy({
         DBAuth: {
           id: this.auth.id,
         },
@@ -166,10 +166,11 @@ export default class StoreHandle {
 
       // Se o contato já existe, atualiza-o
       if (contactsOld) {
-        this.repos.contacts.save(Object.assign( contactsOld, contact));
+        this.repos.contacts.update(contactsOld.DBId, Object.assign(contactsOld, contact))
       } else {
         // Se não existe, adiciona-o
         this.repos.contacts.save(Object.assign({ DBAuth: { id: this.auth.id } } as DBContact, contact));
+        
       }
     }
   };
@@ -274,8 +275,7 @@ export default class StoreHandle {
 
         // Se o contato existir e pertencer ao usuário autenticado, aplica a atualização
         if (contact) {
-         ;
-          await this.repos.contacts.save(Object.assign(contact, contactUpdate));
+          await this.repos.contacts.update(contact.DBId, Object.assign(contact, contactUpdate));
         }
       }
     });
