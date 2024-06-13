@@ -2,9 +2,21 @@
 
 ## A little package made by deadlinecode for storing all the data from baileys in whatever database you want to use by using typeorm
 
-## package updated by lucassaud
+## package updated by vspok
+## Update Note
 
-If you like my work please consider donate to me. https://www.buymeacoffee.com/elsaud
+Optimization of Message Queries:
+
+Message queries have been adjusted to fetch only the necessary data instead of loading all messages into memory.
+We have improved the efficiency of listing messages, resulting in faster performance and significantly lower memory usage.
+
+Implementation and Adjustment of Contact Upsert and Update:
+
+The process of upserting (inserting or updating) and updating contacts has been implemented and adjusted to be performed correctly and efficiently.
+These improvements have resulted in lower RAM usage during contact insertion and update operations.
+
+<!-- If you like my work please consider donate to me. https://www.buymeacoffee.com/vspok -->
+## package 
 
 This package creates a store for a baileys bot instance. You can pass in a database connection to the functions and they will use that connection to create all the needed tables and save all the data to the database using typeorm, which supports all different kinds of databases.
 
@@ -28,7 +40,7 @@ npm install baileys-bottle-devstroupe
 
 ## Usage
 
-Take a look at the information in the [example folder](https://github.com/lucassaud/baileys-bottle-devstroupe/blob/master/src/example/)
+Take a look at the information in the [example folder](https://github.com/vspok/baileys-bottle-devstroupe/blob/master/src/example/)
 
 ## I wanna tweak it for my own use case
 
@@ -59,9 +71,10 @@ Sure thing! You can tinker with the package like this:
    node example.js
    ```
 
+
 ## Found a bug or want to contribute because you're a cool person?
 
-If you found an issue or would like to submit an improvement, please [open an issue here](https://github.com/lucassaud/baileys-bottle-devstroupe/issues/new/choose).
+If you found an issue or would like to submit an improvement, please [open an issue here](https://github.com/vspok/baileys-bottle-devstroupe/issues/new/choose).
 
 If you actually have some spare time and want to contribute, feel free to open a PR and please don't forget to (create and) link the corresponding issue. <br/>
 It's important so we can keep track of all the issues and feature requests that got resolved by PRs.
@@ -76,5 +89,5 @@ It's important so we can keep track of all the issues and feature requests that 
 
 ## You need help or want to exchange about things
 
-Contact me. lucassaud9 at gmail dot com.<br/>
+Contact me. vitor at devstroupe dot com.<br/>
 LS.<br/>
