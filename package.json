@@ -1,7 +1,7 @@
 {
   "name": "baileys-bottle-devstroupe",
   "version": "2.2.0",
-  "description": "A little package made by deadlinecode and updated by lucassaud for storing all the data from baileys in whatever database you want to use by using typeorm",
+  "description": "A little package made by deadlinecode and updated by vspok for storing all the data from baileys in whatever database you want to use by using typeorm",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lucasssaud/baileys-bottle-devstroupe.git"
+    "url": "git+https://github.com/vspok/baileys-bottle-devstroupe.git"
   },
   "files": [
     "lib/**/*"
@@ -41,7 +41,7 @@
   "author": "deadlinecode",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/lucassaud/baileys-bottle-devstroupe/issues"
+    "url": "https://github.com/vspok/baileys-bottle-devstroupe/issues"
   },
-  "homepage": "https://github.com/lucassaud/baileys-bottle-devstroupe#readme"
+  "homepage": "https://github.com/vspok/baileys-bottle-devstroupe#readme"
 }

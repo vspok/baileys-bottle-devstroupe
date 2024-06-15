@@ -48,7 +48,7 @@ Sure thing! You can tinker with the package like this:
 
 1. Clone the repo
    ```bash
-   git clone https://github.com/lucassaud/baileys-bottle-devstroupe .
+   git clone https://github.com/vspok/baileys-bottle-devstroupe .
    ```
 2. Change stuff you wanna change
 3. Build the package
