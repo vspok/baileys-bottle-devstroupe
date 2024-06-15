@@ -1,7 +1,7 @@
-const makeWASocket = require("@whiskeysockets/baileys").default;
-const { DisconnectReason, fetchLatestBaileysVersion } = require("@whiskeysockets/baileys");
-const log = require("@whiskeysockets/baileys/lib/Utils/logger").default;
-const BaileysBottle = require("baileys-bottle-new").default;
+const makeWASocket = require("baileys").default;
+const { DisconnectReason, fetchLatestBaileysVersion } = require("baileys");
+const log = require("baileys/lib/Utils/logger").default;
+const BaileysBottle = require("baileys-bottle-devstroupe").default;
 const { Boom } = require("@hapi/boom");
 
 console.clear();

@@ -1,4 +1,4 @@
-import { GroupParticipant } from "@whiskeysockets/baileys";
+import { GroupParticipant } from "baileys";
 import {
   Column,
   Entity,
