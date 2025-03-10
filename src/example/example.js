@@ -23,7 +23,8 @@ BaileysBottle.init({
         const { auth, store } = await bottle.createStore(clientName);
         console.log("Creating auth...");
         const { state, saveState } = await auth.useAuthHandle({
-            credsFile: "./src/example/session/creds.json" // optional path to creds file
+            credsFile: "./src/example/session/creds.json", // optional path to creds file
+            replace: false //optional, set true to force session replacement if already exists in DB
         });
         console.log("Done");
 
