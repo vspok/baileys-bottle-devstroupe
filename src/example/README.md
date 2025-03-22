@@ -49,7 +49,10 @@ BaileysBottle.init({
 
   // Store created
   // Getting the auth handlers
-  const { state, saveState } = await auth.useAuthHandle();
+  const { state, saveState } = await auth.useAuthHandle({
+            credsFile: "./src/example/session/creds.json", // optional path to creds file
+            replace: false //optional, set true to force session replacement if already exists in DB
+        });
 });
 ```
 
