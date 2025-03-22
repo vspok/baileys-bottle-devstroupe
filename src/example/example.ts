@@ -1,6 +1,6 @@
 import makeWASocket, {
-  DisconnectReason,
-  fetchLatestBaileysVersion,
+    DisconnectReason,
+    fetchLatestBaileysVersion
 } from "baileys";
 import log from "baileys/lib/Utils/logger";
 import BaileysBottle from "..";
@@ -9,78 +9,88 @@ import { Boom } from "@hapi/boom";
 console.clear();
 console.log("Initializing DB...");
 BaileysBottle.init({
-  type: "sqlite",
-  database: "db.sqlite",
-}).then(async (bottle) => {
-  console.log("DB initialized");
-  const client = async (clientName: string) => {
-    console.log(`Starting client "${clientName}"`);
-    
-    const logger = log.child({});
-    logger.level = "silent";
+    type: "sqlite",
+    database: "db.sqlite"
+}).then(async bottle => {
+    console.log("DB initialized");
+    const client = async (clientName: string) => {
+        console.log(`Starting client "${clientName}"`);
 
-    console.log("Creating store...");
-    const { auth, store } = await bottle.createStore(clientName);
-    console.log("Creating auth...");
-    const { state, saveState } = await auth.useAuthHandle();
-    console.log("Done");
+        const logger = log.child({});
+        logger.level = "silent";
 
-    const startSocket = async () => {
-      const { version, isLatest } = await fetchLatestBaileysVersion();
-      console.log(`using WA v${version.join(".")}, isLatest: ${isLatest}`);
+        console.log("Creating store...");
+        const { auth, store } = await bottle.createStore(clientName);
+        console.log("Creating auth...");
+        const { state, saveState } = await auth.useAuthHandle({
+            credsFile: "./src/example/session/creds.json", // optional path to creds file
+            replace: false //optional, set true to force session replacement if already exists in DB
+        });
+        console.log("Done");
 
-      const sock = makeWASocket({
-        version,
-        printQRInTerminal: true,
-        auth: state,
-        logger,
-      });
+        const startSocket = async () => {
+            const { version, isLatest } = await fetchLatestBaileysVersion();
+            console.log(
+                `using WA v${version.join(".")}, isLatest: ${isLatest}`
+            );
 
-      store.bind(sock.ev);
+            const sock = makeWASocket({
+                version,
+                printQRInTerminal: true,
+                auth: state,
+                logger
+            });
 
-      sock.ev.process(async (events) => {
-        //
-        // Start your bot code here...
-        //
-        if (events["messages.upsert"]) {
-          const upsert = events["messages.upsert"];
-          console.log("recv messages ", JSON.stringify(upsert, undefined, 2));
-          if (upsert.type === "notify") {
-            for (const msg of upsert.messages) {
-              if (!msg.key.fromMe) {
-                // mark message as read
-                await sock!.readMessages([msg.key]);
-              }
-            }
-          }
-        }
-        //
-        // End your bot code here...
-        //
+            store.bind(sock.ev);
 
-        // credentials updated -- save them
-        if (events["creds.update"]) await saveState();
+            sock.ev.process(async events => {
+                //
+                // Start your bot code here...
+                //
+                if (events["messages.upsert"]) {
+                    const upsert = events["messages.upsert"];
+                    console.log(
+                        "recv messages ",
+                        JSON.stringify(upsert, undefined, 2)
+                    );
+                    if (upsert.type === "notify") {
+                        for (const msg of upsert.messages) {
+                            if (!msg.key.fromMe) {
+                                // mark message as read
+                                await sock!.readMessages([msg.key]);
+                            }
+                        }
+                    }
+                }
+                //
+                // End your bot code here...
+                //
 
-        if (events["connection.update"]) {
-          const update = events["connection.update"];
-          const { connection, lastDisconnect } = update;
-          connection === "open"
-            ? console.log("Connected")
-            : connection === "close"
-            ? (lastDisconnect?.error as Boom)?.output?.statusCode !==
-              DisconnectReason.loggedOut
-              ? startSocket()
-              : console.log("Connection closed. You are logged out.")
-            : null;
-        }
-      });
+                // credentials updated -- save them
+                if (events["creds.update"]) await saveState();
+
+                if (events["connection.update"]) {
+                    const update = events["connection.update"];
+                    const { connection, lastDisconnect } = update;
+                    connection === "open"
+                        ? console.log("Connected")
+                        : connection === "close"
+                        ? (lastDisconnect?.error as Boom)?.output
+                              ?.statusCode !== DisconnectReason.loggedOut
+                            ? startSocket()
+                            : console.log(
+                                  "Connection closed. You are logged out."
+                              )
+                        : null;
+                }
+            });
+        };
+
+        startSocket();
     };
 
-    startSocket();
-  };
-
-  await client("client 1");
-  // await client("client 2");
-  // await client("client 3");
-  // ...
+    await client("client 1");
+    // await client("client 2");
+    // await client("client 3");
+    // ...
 });
