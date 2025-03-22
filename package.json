@@ -1,6 +1,6 @@
 {
     "name": "baileys-bottle-devstroupe",
-    "version": "2.2.7",
+    "version": "2.2.8",
     "description": "A little package made by deadlinecode and updated by vspok for storing all the data from baileys in whatever database you want to use by using typeorm",
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
@@ -12,7 +12,9 @@
         "type": "git",
         "url": "git+https://github.com/vspok/baileys-bottle-devstroupe.git"
     },
-    "files": ["lib/**/*"],
+    "files": [
+        "lib/**/*"
+    ],
     "dependencies": {
         "@types/lodash": "^4.17.0",
         "baileys": "6.7.9",
@@ -29,7 +31,14 @@
         "ts-node": "^10.9.1",
         "typescript": "^5.4.5"
     },
-    "keywords": ["WA", "WhatsApp", "Bot", "DB", "Database", "Baileys"],
+    "keywords": [
+        "WA",
+        "WhatsApp",
+        "Bot",
+        "DB",
+        "Database",
+        "Baileys"
+    ],
     "author": "deadlinecode",
     "license": "ISC",
     "bugs": {
