@@ -6,17 +6,22 @@ import {
   Unique,
   ManyToOne,
   Long,
+  JoinColumn,
 } from "typeorm";
 import { Auth } from "./Auth";
 
 @Entity()
-@Unique(["DBId", "id"])
+@Unique(["id", "authId"])
 export class Chat {
   @PrimaryGeneratedColumn()
   DBId: number;
 
   @ManyToOne(() => Auth, (auth) => auth.chats, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "authId" })
   DBAuth: Auth;
+
+  @Column()
+  authId: number;
 
   @Column()
   id: string;

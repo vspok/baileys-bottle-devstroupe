@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
@@ -8,15 +9,19 @@ import {
 import { Auth } from "./Auth";
 
 @Entity()
-@Unique(["DBId", "id"])
+@Unique(["id", "authId"])
 export class Contact {
   @PrimaryGeneratedColumn()
   DBId: number;
 
-  @ManyToOne(() => Auth, (auth) => auth.chats, { onDelete: "CASCADE" })
+  @ManyToOne(() => Auth, (auth) => auth.contacts, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "authId" })
   DBAuth: Auth;
 
-  @Column({ unique: true })
+  @Column()
+  authId: number;
+
+  @Column()
   id: string;
 
   @Column({ nullable: true })

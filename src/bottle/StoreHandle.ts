@@ -155,24 +155,38 @@ export default class StoreHandle {
 
   private contactsUpsert = async (newContacts: Partial<Contact>[]) => {
     // Atualiza os contatos existentes com os novos dados ou adiciona novos contatos
-    for (const contact of newContacts) {
+    // for (const contact of newContacts) {
 
-      const contactsOld = await this.repos.contacts.findOneBy({
-        DBAuth: {
-          id: this.auth.id,
-        },
-        id: contact.id
-      });
+    //   const contactsOld = await this.repos.contacts.findOneBy({
+    //     DBAuth: {
+    //       id: this.auth.id,
+    //     },
+    //     id: contact.id
+    //   });
 
-      // Se o contato já existe, atualiza-o
-      if (contactsOld) {
-        this.repos.contacts.update(contactsOld.DBId, Object.assign(contactsOld, contact))
-      } else {
-        // Se não existe, adiciona-o
-        this.repos.contacts.save(Object.assign({ DBAuth: { id: this.auth.id } } as DBContact, contact));
-        
-      }
-    }
+    //   // Se o contato já existe, atualiza-o
+    //   if (contactsOld) {
+    //     this.repos.contacts.update(contactsOld.DBId, Object.assign(contactsOld, contact))
+    //   } else {
+    //     // Se não existe, adiciona-o
+    //     this.repos.contacts.save(Object.assign({ DBAuth: { id: this.auth.id } } as DBContact, contact));
+
+    //   }
+    // }
+    const entities = newContacts.map(c => ({
+      id: c.id,
+      name: c.name,
+      notify: c.notify,
+      verifiedName: c.verifiedName,
+      imgUrl: c.imgUrl,
+      status: c.status,
+      authId: this.auth.id,
+    })) as DBContact[];
+
+    await this.repos.contacts.upsert(
+      entities,
+      ["id", "authId"]  // chave composta que você definiu no @Unique
+    );
   };
 
   private assertMessageList = async (jid: string) => {
@@ -262,24 +276,36 @@ export default class StoreHandle {
     });
     ev.on("contacts.update", async (contacts) => {
       this.contactsUpsert(contacts);
-      
+
     });
-    ev.on("chats.upsert", (newChats) => {
+    ev.on("chats.upsert", async (newChats) => {
       try {
-        newChats.forEach((chat) => {
-          let chat_db = this.repos.chats.findOne({
-            where: {
-              id: chat.id,
-              DBAuth: { id: this.auth.id },
-            },
-          })
-          if (!chat_db) {
-            this.repos.chats.save({
-              ...chat,
-              DBAuth: { id: this.auth.id },
-            })
-          }
-        });
+        // for (const chat of newChats) {
+        //   let chat_db = await this.repos.chats.findOne({
+        //     where: {
+        //       id: chat.id,
+        //       DBAuth: { id: this.auth.id },
+        //     },
+        //   });
+        //   if (!chat_db) {
+        //     this.repos.chats.save({
+        //       ...chat,
+        //       DBAuth: { id: this.auth.id },
+        //     })
+        //   }
+        // }
+        const entities = newChats.map(c => ({
+          id: c.id,
+          conversationTimestamp: c.conversationTimestamp,
+          unreadCount: c.unreadCount,
+          authId: this.auth.id,
+        }));
+    
+        // insere ou atualiza em lote
+        await this.repos.chats.upsert(
+          entities,
+          ["id", "authId"]
+        );
       } catch { }
     });
     ev.on("chats.update", async (updates) => {
@@ -658,13 +684,13 @@ export default class StoreHandle {
       DBAuth: { id: this.auth.id },
     });
     if (!group) {
-      const metadata = await sock?.groupMetadata(jid).catch((error) => 
-        console.log('fetchGroupMetadata groupMetadata error',error)
+      const metadata = await sock?.groupMetadata(jid).catch((error) =>
+        console.log('fetchGroupMetadata groupMetadata error', error)
       );
-      metadata &&  (group = await this.repos.groups.save({
-          ...metadata,
-          DBAuth: { id: this.auth.id },
-        }));
+      metadata && (group = await this.repos.groups.save({
+        ...metadata,
+        DBAuth: { id: this.auth.id },
+      }));
     }
 
     return group;
