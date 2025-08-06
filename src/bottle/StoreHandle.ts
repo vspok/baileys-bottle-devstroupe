@@ -183,10 +183,12 @@ export default class StoreHandle {
       authId: this.auth.id,
     })) as DBContact[];
 
-    await this.repos.contacts.upsert(
-      entities,
-      ["id", "authId"]  // chave composta que você definiu no @Unique
-    );
+    await this.retryOperation(async () => {
+      return await this.repos.contacts.upsert(
+        entities,
+        ["id", "authId"]  // chave composta que você definiu no @Unique
+      );
+    });
   };
 
   private assertMessageList = async (jid: string) => {
@@ -199,9 +201,11 @@ export default class StoreHandle {
     });
 
     if (!messageDic) {
-      messageDic = await this.repos.messageDics.save({
-        jid,
-        DBAuth: { id: this.auth.id }
+      messageDic = await this.retryOperation(async () => {
+        return await this.repos.messageDics.save({
+          jid,
+          DBAuth: { id: this.auth.id }
+        });
       });
     }
 
@@ -321,7 +325,9 @@ export default class StoreHandle {
         }
 
         Object.assign(chat, update);
-        await this.repos.chats.save(chat);
+        await this.retryOperation(async () => {
+          await this.repos.chats.save(chat);
+        });
       }
     });
     ev.on("presence.update", async ({ id, presences: update }) => {
@@ -350,7 +356,9 @@ export default class StoreHandle {
       });
 
       try {
-        await this.repos.presenceDics.save(chat);
+        await this.retryOperation(async () => {
+          await this.repos.presenceDics.save(chat);
+        });
       } catch { }
     });
     ev.on(
@@ -387,10 +395,12 @@ export default class StoreHandle {
 
         if (!existingMessage) {
           // Se a mensagem não existir, salva-a no banco de dados
-          await this.repos.messages.save({
-            ...(msg as any),
-            msgId: msg.key?.id,
-            dictionary: await this.assertMessageList(jid),
+          await this.retryOperation(async () => {
+            await this.repos.messages.save({
+              ...(msg as any),
+              msgId: msg.key?.id,
+              dictionary: await this.assertMessageList(jid),
+            });
           });
 
           // Emite um evento de atualização do chat se for uma notificação
@@ -413,7 +423,10 @@ export default class StoreHandle {
         } else {
           // Se a mensagem já existir, atualiza-a
           Object.assign(existingMessage, msg);
-          await this.repos.messages.save(existingMessage);
+          
+          await this.retryOperation(async () => {
+            await this.repos.messages.save(existingMessage);
+          });
         }
       }
     });
@@ -435,7 +448,9 @@ export default class StoreHandle {
         if (message) {
           // Se a mensagem existir, atualiza-a
           Object.assign(message, update);
-          await this.repos.messages.save(message);
+          await this.retryOperation(async () => {
+            await this.repos.messages.save(message);
+          });
         }
       }
     });
@@ -529,7 +544,10 @@ export default class StoreHandle {
         const msg = dictionary.messages.find((x) => x.key.id === key.id!);
         if (!msg) continue;
         updateMessageWithReceipt(msg, receipt);
-        await this.repos.messageDics.save(dictionary);
+        
+        await this.retryOperation(async () => {
+          await this.repos.messageDics.save(dictionary);
+        });
       }
     });
 
@@ -546,7 +564,9 @@ export default class StoreHandle {
         const msg = dictionary.messages.find((x) => x.key.id === key.id!);
         if (!msg) continue;
         updateMessageWithReaction(msg, reaction);
-        await this.repos.messageDics.save(dictionary);
+        await this.retryOperation(async () => {
+          await this.repos.messageDics.save(dictionary);
+        });
       }
     });
   };
@@ -687,9 +707,11 @@ export default class StoreHandle {
       const metadata = await sock?.groupMetadata(jid).catch((error) =>
         console.log('fetchGroupMetadata groupMetadata error', error)
       );
-      metadata && (group = await this.repos.groups.save({
-        ...metadata,
-        DBAuth: { id: this.auth.id },
+      metadata && (group = await this.retryOperation(async () => {
+        return await this.repos.groups.save({
+          ...metadata,
+          DBAuth: { id: this.auth.id },
+        })
       }));
     }
 
@@ -713,5 +735,28 @@ export default class StoreHandle {
 
     return receipt?.userReceipt;
   };
+
+  private async retryOperation<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    delay: number = 100
+  ): Promise<T> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        if (error.code === 'SQLITE_BUSY' && attempt < maxRetries) {
+          console.warn(`Database busy, retrying (${attempt}/${maxRetries})...`)
+          await this.sleep(delay * attempt); // Backoff exponencial
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
 }

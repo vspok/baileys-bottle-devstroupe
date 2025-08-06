@@ -28,6 +28,18 @@ class DB {
             migrations: [],
             logging: options?.debug,
             charset: "cp1251_general_ci",
+            extra: {
+              pragma: {
+                  journal_mode: 'WAL',
+                  synchronous: 'NORMAL',
+                  temp_store: 'memory',
+                  mmap_size: 268435456, // 256MB
+                  cache_size: -64000, // 64MB
+              }  
+            },
+            poolSize: 1,
+            acquireTimeout: 30000,
+            timeout: 30000,
             ...db,
             entities: [
               Auth,
