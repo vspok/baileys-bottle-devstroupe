@@ -1,5 +1,7 @@
-const makeWASocket = require("baileys").default;
-const { DisconnectReason, fetchLatestBaileysVersion } = require("baileys");
+// const makeWASocket = require("baileys").default;
+// const { DisconnectReason, fetchLatestBaileysVersion } = require("baileys");
+import makeWASocket from 'baileys';
+import { DisconnectReason, fetchLatestBaileysVersion } from "baileys";
 const log = require("baileys/lib/Utils/logger").default;
 const BaileysBottle = require("baileys-bottle-devstroupe").default;
 const { Boom } = require("@hapi/boom");
