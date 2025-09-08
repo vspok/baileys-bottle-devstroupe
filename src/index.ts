@@ -1,8 +1,8 @@
 import { DataSource, DataSourceOptions } from "typeorm";
-import AuthHandle from "./bottle/AuthHandle";
-import StoreHandle, { StoreHandleOptions } from "./bottle/StoreHandle";
-import DB from "./DB";
-import { Auth } from "./entity/Auth";
+import AuthHandle from "./bottle/AuthHandle.js";
+import StoreHandle, { StoreHandleOptions } from "./bottle/StoreHandle.js";
+import DB from "./DB.js";
+import { Auth } from "./entity/Auth.js";
 class BaileysBottle {
   static instance = new BaileysBottle();
   private constructor() {}

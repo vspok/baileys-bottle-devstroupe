@@ -10,15 +10,15 @@ import {
   Contact,
   WASocket,
 } from "baileys";
-import { Chat as DBChat } from "../entity/Chat";
-import { Contact as DBContact } from "../entity/Contact";
-import { Message as DBMessage } from "../entity/Message";
-import { MessageDic as DBMessageDic } from "../entity/MessageDic";
-import { PresenceDic as DBPresenceDic } from "../entity/PresenceDic";
-import { Presence as DBPresence } from "../entity/Presence";
-import { GroupMetadata as DBGroupMetadata } from "../entity/GroupMetadata";
+import { Chat as DBChat } from "../entity/Chat.js";
+import { Contact as DBContact } from "../entity/Contact.js";
+import { Message as DBMessage } from "../entity/Message.js";
+import { MessageDic as DBMessageDic } from "../entity/MessageDic.js";
+import { PresenceDic as DBPresenceDic } from "../entity/PresenceDic.js";
+import { Presence as DBPresence } from "../entity/Presence.js";
+import { GroupMetadata as DBGroupMetadata } from "../entity/GroupMetadata.js";
 import { DataSource, In, LessThan } from "typeorm";
-import { Auth } from "../entity/Auth";
+import { Auth } from "../entity/Auth.js";
 import { cloneDeep } from "lodash";
 import moment from 'moment';
 

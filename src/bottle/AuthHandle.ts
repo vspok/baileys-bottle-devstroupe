@@ -7,7 +7,7 @@ import {
     SignalDataTypeMap
 } from "baileys";
 import { DataSource } from "typeorm";
-import { Auth } from "../entity/Auth";
+import { Auth } from "../entity/Auth.js";
 import AsyncLock from "async-lock";
 import { access, readFile } from "fs/promises";
 

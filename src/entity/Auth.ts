@@ -5,11 +5,11 @@ import {
   PrimaryGeneratedColumn,
   Unique,
 } from "typeorm";
-import { Chat } from "./Chat";
-import { Contact } from "./Contact";
-import { GroupMetadata } from "./GroupMetadata";
-import { MessageDic } from "./MessageDic";
-import { PresenceDic } from "./PresenceDic";
+import { Chat } from "./Chat.js";
+import { Contact } from "./Contact.js";
+import { GroupMetadata } from "./GroupMetadata.js";
+import { MessageDic } from "./MessageDic.js";
+import { PresenceDic } from "./PresenceDic.js";
 
 @Entity()
 @Unique(["key"])

@@ -6,8 +6,8 @@ import {
   PrimaryGeneratedColumn,
   Unique,
 } from "typeorm";
-import { Auth } from "./Auth";
-import { Message } from "./Message";
+import { Auth } from "./Auth.js";
+import { Message } from "./Message.js";
 
 @Entity()
 @Unique(["id"])

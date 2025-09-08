@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   Unique,
 } from "typeorm";
-import { MessageDic } from "./MessageDic";
+import { MessageDic } from "./MessageDic.js";
 
 @Entity()
 @Unique(["id"])

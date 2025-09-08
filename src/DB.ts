@@ -1,12 +1,12 @@
 import { DataSource, DataSourceOptions, TreeChildren } from "typeorm";
-import { Auth } from "./entity/Auth";
-import { Chat } from "./entity/Chat";
-import { Contact } from "./entity/Contact";
-import { GroupMetadata } from "./entity/GroupMetadata";
-import { Message } from "./entity/Message";
-import { MessageDic } from "./entity/MessageDic";
-import { Presence } from "./entity/Presence";
-import { PresenceDic } from "./entity/PresenceDic";
+import { Auth } from "./entity/Auth.js";
+import { Chat } from "./entity/Chat.js";
+import { Contact } from "./entity/Contact.js";
+import { GroupMetadata } from "./entity/GroupMetadata.js";
+import { Message } from "./entity/Message.js";
+import { MessageDic } from "./entity/MessageDic.js";
+import { Presence } from "./entity/Presence.js";
+import { PresenceDic } from "./entity/PresenceDic.js";
 
 class DB {
   static instance = new DB();

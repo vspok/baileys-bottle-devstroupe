@@ -8,7 +8,7 @@ import {
   Long,
   JoinColumn,
 } from "typeorm";
-import { Auth } from "./Auth";
+import { Auth } from "./Auth.js";
 
 @Entity()
 @Unique(["id", "authId"])

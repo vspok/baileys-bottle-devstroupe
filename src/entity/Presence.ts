@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
   Unique,
 } from "typeorm";
-import { PresenceDic } from "./PresenceDic";
+import { PresenceDic } from "./PresenceDic.js";
 
 @Entity()
 @Unique(["DBId"])

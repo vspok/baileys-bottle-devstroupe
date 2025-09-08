@@ -6,8 +6,8 @@ import {
   PrimaryGeneratedColumn,
   Unique,
 } from "typeorm";
-import { Auth } from "./Auth";
-import { Presence } from "./Presence";
+import { Auth } from "./Auth.js";
+import { Presence } from "./Presence.js";
 
 @Entity()
 @Unique(["DBId"])
