@@ -5,6 +5,7 @@ import {
   Long,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Relation,
   Unique,
 } from "typeorm";
 import { MessageDic } from "./MessageDic.js";
@@ -24,7 +25,7 @@ export class Message {
   @ManyToOne(() => MessageDic, (x) => x.messages, {
     onDelete: "CASCADE",
   })
-  dictionary: MessageDic;
+  dictionary: Relation<MessageDic>;
 
   @Column({ nullable: true, type: "simple-json" })
   message?: proto.IMessage | null;

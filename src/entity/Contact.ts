@@ -4,6 +4,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Relation,
   Unique,
 } from "typeorm";
 import { Auth } from "./Auth.js";
@@ -16,7 +17,7 @@ export class Contact {
 
   @ManyToOne(() => Auth, (auth) => auth.contacts, { onDelete: "CASCADE" })
   @JoinColumn({ name: "authId" })
-  DBAuth: Auth;
+  DBAuth: Relation<Auth>;
 
   @Column()
   authId: number;

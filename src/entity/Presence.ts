@@ -4,6 +4,7 @@ import {
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Relation,
   Unique,
 } from "typeorm";
 import { PresenceDic } from "./PresenceDic.js";
@@ -15,13 +16,13 @@ export class Presence {
   DBId: number;
 
   @ManyToOne(() => PresenceDic, (x) => x.presences, { onDelete: "CASCADE" })
-  dictionary: PresenceDic;
+  dictionary: Relation<PresenceDic>;
 
   @Column()
   participant: string;
 
   @Column({ type: "simple-json" })
-  lastKnownPresence: WAPresence;
+  lastKnownPresence: Relation<WAPresence>;
 
   @Column({ nullable: true })
   lastSeen?: number;

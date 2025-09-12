@@ -3,6 +3,7 @@ import {
   Entity,
   OneToMany,
   PrimaryGeneratedColumn,
+  Relation,
   Unique,
 } from "typeorm";
 import { Chat } from "./Chat.js";
@@ -24,17 +25,17 @@ export class Auth {
   value: string;
 
   @OneToMany(() => Chat, (chat) => chat.DBAuth)
-  chats: Chat[];
+  chats: Relation<Chat>[];
 
   @OneToMany(() => Contact, (contact) => contact.DBAuth)
-  contacts: Contact[];
+  contacts: Relation<Contact>[];
 
   @OneToMany(() => GroupMetadata, (group) => group.DBAuth)
-  groups: GroupMetadata[];
+  groups: Relation<GroupMetadata>[];
 
   @OneToMany(() => MessageDic, (messageDic) => messageDic.DBAuth)
-  messageDics: MessageDic[];
+  messageDics: Relation<MessageDic>[];
 
   @OneToMany(() => PresenceDic, (presenceDic) => presenceDic.DBAuth)
-  presenceDics: PresenceDic[];
+  presenceDics: Relation<PresenceDic>[];
 }

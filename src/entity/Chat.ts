@@ -7,6 +7,7 @@ import {
   ManyToOne,
   Long,
   JoinColumn,
+  Relation,
 } from "typeorm";
 import { Auth } from "./Auth.js";
 
@@ -18,7 +19,7 @@ export class Chat {
 
   @ManyToOne(() => Auth, (auth) => auth.chats, { onDelete: "CASCADE" })
   @JoinColumn({ name: "authId" })
-  DBAuth: Auth;
+  DBAuth: Relation<Auth>;
 
   @Column()
   authId: number;

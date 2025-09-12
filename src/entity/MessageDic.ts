@@ -4,6 +4,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Relation,
   Unique,
 } from "typeorm";
 import { Auth } from "./Auth.js";
@@ -16,7 +17,7 @@ export class MessageDic {
   id: number;
 
   @ManyToOne(() => Auth, (auth) => auth.chats, { onDelete: "CASCADE" })
-  DBAuth: Auth;
+  DBAuth: Relation<Auth>;
 
   @Column()
   jid: string;
@@ -25,5 +26,5 @@ export class MessageDic {
     onDelete: "CASCADE",
     cascade: ["remove"],
   })
-  messages: Message[];
+  messages: Relation<Message>[];
 }

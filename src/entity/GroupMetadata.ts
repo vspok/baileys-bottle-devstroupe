@@ -4,6 +4,7 @@ import {
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Relation,
   Unique,
 } from "typeorm";
 import { Auth } from "./Auth.js";
@@ -15,7 +16,7 @@ export class GroupMetadata {
   DBId: number;
 
   @ManyToOne(() => Auth, (auth) => auth.chats, { onDelete: "CASCADE" })
-  DBAuth: Auth;
+  DBAuth: Relation<Auth>;
 
   @Column()
   id: string;
@@ -54,7 +55,7 @@ export class GroupMetadata {
   size?: number;
 
   @Column({ nullable: true, type: "simple-json" })
-  participants: GroupParticipant[];
+  participants: Relation<GroupParticipant>[];
 
   @Column({ nullable: true })
   ephemeralDuration?: number;
