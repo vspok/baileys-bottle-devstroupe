@@ -1,6 +1,6 @@
 {
     "name": "baileys-bottle-devstroupe",
-    "version": "2.3.4",
+    "version": "2.3.5",
     "type": "module",
     "description": "A little package made by deadlinecode and updated by vspok for storing all the data from baileys in whatever database you want to use by using typeorm",
     "main": "lib/index.js",
@@ -18,9 +18,9 @@
     ],
     "dependencies": {
         "@types/lodash": "^4.17.0",
-        "baileys": "^6.7.19",
-        "lodash": "^4.17.21",
         "async-lock": "^1.4.1",
+        "baileys": "^7.0.0-rc.2",
+        "lodash": "^4.17.21",
         "moment": "^2.30.1",
         "typeorm": "0.3.7"
     },

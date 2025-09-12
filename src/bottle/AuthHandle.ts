@@ -19,7 +19,8 @@ const KEY_MAP: { [T in keyof SignalDataTypeMap]: string } = {
     "sender-key": "senderKeys",
     "app-state-sync-key": "appStateSyncKeys",
     "app-state-sync-version": "appStateVersions",
-    "sender-key-memory": "senderKeyMemory"
+    "sender-key-memory": "senderKeyMemory",
+    "lid-mapping": "lidMappings"
 };
 
 interface AuthOptions {
@@ -47,7 +48,7 @@ export default class AuthHandle {
         let creds: AuthenticationCreds;
         let keys: any = {};
 
-        const fileExists = async path => {
+        const fileExists = async (path: string): Promise<boolean> => {
             try {
                 await access(path);
                 return true;
@@ -55,6 +56,7 @@ export default class AuthHandle {
                 return false;
             }
         };
+
         const readData = async (file: string) => {
             try {
                 const filePath = file;
@@ -82,7 +84,12 @@ export default class AuthHandle {
                       creds: initAuthCreds(),
                       keys: {}
                   });
-
+       
+                  // Garantir que o mapeamento LID existe na estrutura de keys
+        if (!keys.lidMappings) {
+            keys.lidMappings = {};
+        }
+       
         const saveState = () =>
             this.repos.auth.upsert(
                 {
@@ -109,7 +116,7 @@ export default class AuthHandle {
                             if (value) {
                                 if (type === "app-state-sync-key")
                                     value =
-                                        proto.Message.AppStateSyncKeyData.fromObject(
+                                        proto.Message.AppStateSyncKeyData.create(
                                             value
                                         );
                                 dict[id] = value;
@@ -130,6 +137,47 @@ export default class AuthHandle {
                 }
             },
             saveState
-        };
+        };        
+    };
+
+    /**
+     * Método auxiliar para acessar mapeamentos LID/PN
+     * Pode ser útil para debug ou manipulação manual
+     */
+    getLIDMappings = async (): Promise<Record<string, any>> => {
+        const existingAuth = await this.repos.auth.findOneBy({
+            key: this.key
+        });
+        
+        if (existingAuth && existingAuth.value) {
+            const { keys } = JSON.parse(existingAuth.value, BufferJSON.reviver);
+            return keys.lidMappings || {};
+        }
+        
+        return {};
+    };
+
+    /**
+     * Método auxiliar para limpar mapeamentos antigos se necessário
+     */
+    clearLIDMappings = async (): Promise<void> => {
+        const existingAuth = await this.repos.auth.findOneBy({
+            key: this.key
+        });
+        
+        if (existingAuth && existingAuth.value) {
+            const authData = JSON.parse(existingAuth.value, BufferJSON.reviver);
+            authData.keys.lidMappings = {};
+            
+            await this.repos.auth.upsert(
+                {
+                    key: this.key,
+                    value: JSON.stringify(authData, BufferJSON.replacer, 2)
+                },
+                {
+                    conflictPaths: ["key"]
+                }
+            );
+        }
     };
 }

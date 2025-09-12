@@ -9,6 +9,7 @@ import {
   WAMessageCursor,
   Contact,
   WASocket,
+  isPnUser, // Substituindo isJidUser por isPnUser
 } from "baileys";
 import { Chat as DBChat } from "../entity/Chat.js";
 import { Contact as DBContact } from "../entity/Contact.js";
@@ -154,34 +155,21 @@ export default class StoreHandle {
   };
 
   private contactsUpsert = async (newContacts: Partial<Contact>[]) => {
-    // Atualiza os contatos existentes com os novos dados ou adiciona novos contatos
-    // for (const contact of newContacts) {
-
-    //   const contactsOld = await this.repos.contacts.findOneBy({
-    //     DBAuth: {
-    //       id: this.auth.id,
-    //     },
-    //     id: contact.id
-    //   });
-
-    //   // Se o contato já existe, atualiza-o
-    //   if (contactsOld) {
-    //     this.repos.contacts.update(contactsOld.DBId, Object.assign(contactsOld, contact))
-    //   } else {
-    //     // Se não existe, adiciona-o
-    //     this.repos.contacts.save(Object.assign({ DBAuth: { id: this.auth.id } } as DBContact, contact));
-
-    //   }
-    // }
-    const entities = newContacts.map(c => ({
-      id: c.id,
-      name: c.name,
-      notify: c.notify,
-      verifiedName: c.verifiedName,
-      imgUrl: c.imgUrl,
-      status: c.status,
-      authId: this.auth.id,
-    })) as DBContact[];
+    // Mapeia contatos para o novo formato com suporte a LID
+    const entities = newContacts.map(c => {
+      // Novo formato de contato com suporte a LID
+      const entity = {
+        id: c.id, // Campo preferido pelo WhatsApp (pode ser LID ou PN)
+        name: c.name,
+        notify: c.notify,
+        verifiedName: c.verifiedName,
+        imgUrl: c.imgUrl,
+        status: c.status,
+        authId: this.auth.id      
+      };
+      
+      return entity;
+    }) as DBContact[];
 
     await this.retryOperation(async () => {
       return await this.repos.contacts.upsert(
@@ -192,7 +180,6 @@ export default class StoreHandle {
   };
 
   private assertMessageList = async (jid: string) => {
-    // return this.ds.transaction(async (manager) => {
     let messageDic = await this.repos.messageDics.findOne({
       where: {
         jid,
@@ -210,11 +197,47 @@ export default class StoreHandle {
     }
 
     return messageDic;
-    // });
+  };
+
+  /**
+   * Método auxiliar para normalizar JID considerando sistema LID
+   */
+  private normalizeJid = (jid: string): string => {
+    return jidNormalizedUser(jid);
+  };
+
+  /**
+   * Método auxiliar para extrair JID da chave da mensagem considerando campos alternativos
+   */
+  private extractJidFromKey = (key: WAMessageKey): string => {
+    // Prioriza remoteJidAlt se disponível (para DMs com LID)
+    if (key.remoteJidAlt) {
+      return this.normalizeJid(key.remoteJidAlt);
+    }
+    return this.normalizeJid(key.remoteJid!);
+  };
+
+  /**
+   * Método auxiliar para extrair participant considerando participantAlt
+   */
+  private extractParticipantFromKey = (key: WAMessageKey): string | undefined => {
+    // Prioriza participantAlt se disponível (para grupos com LID)
+    if (key.participantAlt) {
+      return this.normalizeJid(key.participantAlt);
+    }
+    return key.participant ? this.normalizeJid(key.participant) : undefined;
   };
 
   bind = (ev: BaileysEventEmitter) => {
     ev.on("connection.update", (update) => Object.assign(this.state, update));
+    
+    // Novo evento para mapeamentos LID
+    ev.on("lid-mapping.update", async (mapping) => {
+      console.log('LID mappings updated:', mapping);
+      // Os mapeamentos são automaticamente salvos pelo AuthHandle
+      // Aqui você pode adicionar lógica adicional se necessário
+    });
+
     ev.on(
       "messaging-history.set",
       async ({
@@ -223,10 +246,6 @@ export default class StoreHandle {
         messages: newMessages,
         isLatest,
       }) => {
-
-
-
-        // if(isLatest) {
         try {
           let messages = cloneDeep(newMessages);
 
@@ -236,14 +255,12 @@ export default class StoreHandle {
               moment().subtract(1, 'days').valueOf()
             );
           }
+          
           await this.contactsUpsert(newContacts);
-          // console.log(messages.length, 'count');
+          
           for (let index = 0; index < messages.length; index++) {
             const msg = messages[index];
-
-            // }
-            // for (const msg of newMessages) {
-            const jid = msg.key.remoteJid!;
+            const jid = this.extractJidFromKey(msg.key);
 
             // Realiza a consulta diretamente no banco de dados para verificar se a mensagem já existe
             const existingMessage = await this.repos.messages.findOne({
@@ -265,6 +282,7 @@ export default class StoreHandle {
               });
               continue;
             }
+            
             // Se a mensagem já existir, atualiza-a
             Object.assign(existingMessage, msg);
             await this.repos.messages.save(existingMessage);
@@ -272,32 +290,19 @@ export default class StoreHandle {
         } catch (error) {
           console.error(error)
         }
-        // }
       }
     );
+
     ev.on("contacts.upsert", async (contacts) => {
       this.contactsUpsert(contacts);
     });
+
     ev.on("contacts.update", async (contacts) => {
       this.contactsUpsert(contacts);
-
     });
+
     ev.on("chats.upsert", async (newChats) => {
       try {
-        // for (const chat of newChats) {
-        //   let chat_db = await this.repos.chats.findOne({
-        //     where: {
-        //       id: chat.id,
-        //       DBAuth: { id: this.auth.id },
-        //     },
-        //   });
-        //   if (!chat_db) {
-        //     this.repos.chats.save({
-        //       ...chat,
-        //       DBAuth: { id: this.auth.id },
-        //     })
-        //   }
-        // }
         const entities = newChats.map(c => ({
           id: c.id,
           conversationTimestamp: c.conversationTimestamp,
@@ -312,6 +317,7 @@ export default class StoreHandle {
         );
       } catch { }
     });
+
     ev.on("chats.update", async (updates) => {
       for (let update of updates) {
         var chat = await this.repos.chats.findOneBy({
@@ -330,6 +336,7 @@ export default class StoreHandle {
         });
       }
     });
+
     ev.on("presence.update", async ({ id, presences: update }) => {
       var chat =
         (await this.repos.presenceDics.findOne({
@@ -361,6 +368,7 @@ export default class StoreHandle {
         });
       } catch { }
     });
+
     ev.on(
       "chats.delete",
       async (deletions) =>
@@ -374,12 +382,14 @@ export default class StoreHandle {
           )
         )
     );
+
     ev.on("messages.upsert", async ({ messages: newMessages, type }) => {
       if (type !== "append" && type !== "notify") {
         return;
       }
+      
       for (const msg of newMessages) {
-        const jid = jidNormalizedUser(msg.key.remoteJid!);
+        const jid = this.extractJidFromKey(msg.key);
 
         // Verifica se a mensagem já existe no dicionário
         const existingMessage = await this.repos.messages.findOne({
@@ -388,7 +398,6 @@ export default class StoreHandle {
             dictionary: {
               jid,
               DBAuth: { id: this.auth.id }
-
             },
           },
         });
@@ -430,9 +439,10 @@ export default class StoreHandle {
         }
       }
     });
+
     ev.on("messages.update", async (updates) => {
       for (const { update, key } of updates) {
-        const jid = key.remoteJid!;
+        const jid = this.extractJidFromKey(key);
 
         // Verifica se a mensagem existe no dicionário
         const message = await this.repos.messages.findOne({
@@ -454,6 +464,7 @@ export default class StoreHandle {
         }
       }
     });
+
     ev.on("messages.delete", async (item) => {
       if (this.options.disableDelete.includes("messages")) return;
       if ("all" in item) {
@@ -467,7 +478,7 @@ export default class StoreHandle {
         if (!dictionary) return;
         this.repos.messages.remove(dictionary.messages);
       } else {
-        const jid = item.keys[0].remoteJid!;
+        const jid = this.extractJidFromKey(item.keys[0]);
         const dictionary = await this.repos.messageDics.findOne({
           where: {
             jid,
@@ -504,6 +515,7 @@ export default class StoreHandle {
         DBAuth: { id: this.auth.id },
       });
       if (!metadata) return;
+      
       switch (action) {
         case "add":
           metadata.participants.push(
@@ -533,9 +545,10 @@ export default class StoreHandle {
 
     ev.on("message-receipt.update", async (updates) => {
       for (const { key, receipt } of updates) {
+        const jid = this.extractJidFromKey(key);
         const dictionary = await this.repos.messageDics.findOne({
           where: {
-            jid: key.remoteJid!,
+            jid,
             DBAuth: { id: this.auth.id },
           },
           relations: ["messages"],
@@ -553,9 +566,10 @@ export default class StoreHandle {
 
     ev.on("messages.reaction", async (reactions) => {
       for (const { key, reaction } of reactions) {
+        const jid = this.extractJidFromKey(key);
         const dictionary = await this.repos.messageDics.findOne({
           where: {
-            jid: key.remoteJid!,
+            jid,
             DBAuth: { id: this.auth.id },
           },
           relations: ["messages"],
@@ -625,26 +639,6 @@ export default class StoreHandle {
     return messages;
   };
 
-  // loadMessage = async (
-  //   jid: string,
-  //   id: string
-  // ): Promise<DBMessage | undefined> =>
-  //   (
-  //     // await this.repos.messageDics.findOne({
-  //     //   where: {
-  //     //     jid,
-  //     //     DBAuth: { id: this.auth.id },
-  //     //   },
-  //     //   relations: ["messages"],
-  //     // })
-  //     await this.repos.messageDics.createQueryBuilder("dic")
-  //     .leftJoinAndSelect("dic.DBAuth", "auth")
-  //     .leftJoinAndSelect("dic.messages", "messages")
-  //     .where("dic.jid = :jid", { jid })
-  //     .andWhere("auth.id = :id", { id: this.auth.id })
-  //     .andWhere("messages.msgId = :id", { id })
-  //     .getOne()
-  //   )?.messages.find((x) => x.msgId === id);
   loadMessage = async (
     jid: string,
     id: string
@@ -654,9 +648,7 @@ export default class StoreHandle {
         msgId: id,
         dictionary: {
           jid,
-          // DBAuth: this.auth,
           DBAuth: { id: this.auth.id }
-
         },
       },
     });
@@ -670,7 +662,6 @@ export default class StoreHandle {
         dictionary: {
           jid,
           DBAuth: { id: this.auth.id }
-
         },
       },
       order: {
@@ -718,15 +709,15 @@ export default class StoreHandle {
     return group;
   };
 
-  fetchMessageReceipts = async ({ remoteJid, id }: WAMessageKey): Promise<DBMessage["userReceipt"] | undefined> => {
+  fetchMessageReceipts = async ({ remoteJid, id, remoteJidAlt }: WAMessageKey): Promise<DBMessage["userReceipt"] | undefined> => {
+    // Usa remoteJidAlt se disponível
+    const jid = remoteJidAlt || remoteJid;
+    
     const receipt = await this.repos.messages.findOne({
-      // relations: {
-      //   dictionary: true,
-      // },
       where: {
         msgId: id,
         dictionary: {
-          jid: remoteJid,
+          jid,
           DBAuth: { id: this.auth.id }
         },
       },
@@ -734,6 +725,21 @@ export default class StoreHandle {
     });
 
     return receipt?.userReceipt;
+  };
+
+  /**
+   * Método auxiliar para acessar o store de mapeamentos LID
+   * Útil para converter entre LID e PN quando necessário
+   */
+  getLIDMappingStore = (sock: WASocket) => {
+    return sock.signalRepository.getLIDMappingStore();
+  };
+
+  /**
+   * Método auxiliar para verificar se um JID é um PN (Phone Number)
+   */
+  isPnJid = (jid: string): boolean => {
+    return isPnUser(jid);
   };
 
   private async retryOperation<T>(
@@ -758,5 +764,4 @@ export default class StoreHandle {
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-
 }
