@@ -139,45 +139,4 @@ export default class AuthHandle {
             saveState
         };        
     };
-
-    /**
-     * Método auxiliar para acessar mapeamentos LID/PN
-     * Pode ser útil para debug ou manipulação manual
-     */
-    getLIDMappings = async (): Promise<Record<string, any>> => {
-        const existingAuth = await this.repos.auth.findOneBy({
-            key: this.key
-        });
-        
-        if (existingAuth && existingAuth.value) {
-            const { keys } = JSON.parse(existingAuth.value, BufferJSON.reviver);
-            return keys.lidMappings || {};
-        }
-        
-        return {};
-    };
-
-    /**
-     * Método auxiliar para limpar mapeamentos antigos se necessário
-     */
-    clearLIDMappings = async (): Promise<void> => {
-        const existingAuth = await this.repos.auth.findOneBy({
-            key: this.key
-        });
-        
-        if (existingAuth && existingAuth.value) {
-            const authData = JSON.parse(existingAuth.value, BufferJSON.reviver);
-            authData.keys.lidMappings = {};
-            
-            await this.repos.auth.upsert(
-                {
-                    key: this.key,
-                    value: JSON.stringify(authData, BufferJSON.replacer, 2)
-                },
-                {
-                    conflictPaths: ["key"]
-                }
-            );
-        }
-    };
 }

@@ -728,14 +728,6 @@ export default class StoreHandle {
   };
 
   /**
-   * Método auxiliar para acessar o store de mapeamentos LID
-   * Útil para converter entre LID e PN quando necessário
-   */
-  getLIDMappingStore = (sock: WASocket) => {
-    return sock.signalRepository.getLIDMappingStore();
-  };
-
-  /**
    * Método auxiliar para verificar se um JID é um PN (Phone Number)
    */
   isPnJid = (jid: string): boolean => {
