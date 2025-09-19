@@ -56,7 +56,7 @@ export default class StoreHandle {
           id: this.auth.id,
         },
       }),
-    id: (id: string): Promise<DBChat | undefined> =>
+    id: (id: string): Promise<DBChat | any> =>
       this.repos.chats.findOneBy({
         id,
         DBAuth: {
@@ -72,7 +72,7 @@ export default class StoreHandle {
           id: this.auth.id,
         },
       }),
-    id: (id: string): Promise<DBContact | undefined> =>
+    id: (id: string): Promise<DBContact | any> =>
       this.repos.contacts.findOneBy({
         id,
         DBAuth: {
@@ -82,7 +82,7 @@ export default class StoreHandle {
   };
 
   messages = {
-    all: async (jid: string): Promise<DBMessage[] | undefined> =>
+    all: async (jid: string): Promise<DBMessage[] | any> =>
       (
         await this.repos.messageDics.findOne({
           where: {
@@ -94,7 +94,7 @@ export default class StoreHandle {
           relations: ["messages"],
         })
       )?.messages,
-    id: async (jid: string, msgId: string): Promise<DBMessage | undefined> =>
+    id: async (jid: string, msgId: string): Promise<DBMessage | any> =>
       (
         await this.repos.messageDics.findOne({
           where: {
@@ -115,7 +115,7 @@ export default class StoreHandle {
           id: this.auth.id,
         },
       }),
-    id: (id: string): Promise<DBGroupMetadata | undefined> =>
+    id: (id: string): Promise<DBGroupMetadata | any> =>
       this.repos.groups.findOneBy({
         id,
         DBAuth: {
@@ -125,7 +125,7 @@ export default class StoreHandle {
   };
 
   presence = {
-    all: async (id: string): Promise<DBPresence[] | undefined> =>
+    all: async (id: string): Promise<DBPresence[] | any> =>
       (
         await this.repos.presenceDics.findOne({
           where: {
@@ -140,7 +140,7 @@ export default class StoreHandle {
     id: async (
       id: string,
       participant: string
-    ): Promise<DBPresence | undefined> =>
+    ): Promise<DBPresence | any> =>
       (
         await this.repos.presenceDics.findOne({
           where: {
@@ -220,7 +220,7 @@ export default class StoreHandle {
   /**
    * Método auxiliar para extrair participant considerando participantAlt
    */
-  private extractParticipantFromKey = (key: WAMessageKey): string | undefined => {
+  private extractParticipantFromKey = (key: WAMessageKey): string | any => {
     // Prioriza participantAlt se disponível (para grupos com LID)
     if (key.participantAlt) {
       return this.normalizeJid(key.participantAlt);
@@ -642,8 +642,8 @@ export default class StoreHandle {
   loadMessage = async (
     jid: string,
     id: string,
-    sock: WASocket | undefined
-  ): Promise<DBMessage | undefined> => {
+    sock?: WASocket | any
+  ): Promise<DBMessage | any> => {
     var message = await this.repos.messages.findOne({
       where: {
         msgId: id,
@@ -653,11 +653,12 @@ export default class StoreHandle {
         },
       },
     });
-    
-    if (!message) {
-      const onWhatsApp = await sock?.onWhatsApp(jid).catch((error) =>
+    // console.log('loadMessage', jid);
+    if (!message && sock) {
+      const onWhatsApp = await sock?.onWhatsApp(jid.replace(/[^\d-]/g, '')).catch((error) =>
         console.log('loadMessage onWhatsApp error', error)
       );
+      // console.log('loadMessage onWhatsApp', onWhatsApp);
       onWhatsApp && (message = await this.retryOperation(async () => {
         return  await this.repos.messages.findOne({
           where: {
@@ -674,7 +675,7 @@ export default class StoreHandle {
     return message;
   };
 
-  mostRecentMessage = async (jid: string): Promise<DBMessage | undefined> => {
+  mostRecentMessage = async (jid: string): Promise<DBMessage | any> => {
     const message = await this.repos.messages.findOne({
       where: {
         dictionary: {
@@ -692,7 +693,7 @@ export default class StoreHandle {
 
   fetchImageUrl = async (
     jid: string,
-    sock: WASocket | undefined
+    sock: WASocket | any
   ): Promise<string> => {
     const contact = await this.repos.contacts.findOne({ where: { id: jid } });
     if (!contact) return sock?.profilePictureUrl(jid);
@@ -706,8 +707,8 @@ export default class StoreHandle {
 
   fetchGroupMetadata = async (
     jid: string,
-    sock: WASocket | undefined
-  ): Promise<DBGroupMetadata | undefined> => {
+    sock: WASocket | any
+  ): Promise<DBGroupMetadata | any> => {
     var group = await this.repos.groups.findOneBy({
       id: jid,
       DBAuth: { id: this.auth.id },
@@ -727,7 +728,7 @@ export default class StoreHandle {
     return group;
   };
 
-  fetchMessageReceipts = async ({ remoteJid, id, remoteJidAlt }: WAMessageKey): Promise<DBMessage["userReceipt"] | undefined> => {
+  fetchMessageReceipts = async ({ remoteJid, id, remoteJidAlt }: WAMessageKey): Promise<DBMessage["userReceipt"] | any> => {
     // Usa remoteJidAlt se disponível
     const jid = remoteJidAlt || remoteJid;
     
