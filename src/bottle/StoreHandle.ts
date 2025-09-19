@@ -641,9 +641,10 @@ export default class StoreHandle {
 
   loadMessage = async (
     jid: string,
-    id: string
+    id: string,
+    sock: WASocket | undefined
   ): Promise<DBMessage | undefined> => {
-    const message = await this.repos.messages.findOne({
+    var message = await this.repos.messages.findOne({
       where: {
         msgId: id,
         dictionary: {
@@ -652,6 +653,23 @@ export default class StoreHandle {
         },
       },
     });
+    
+    if (!message) {
+      const onWhatsApp = await sock?.onWhatsApp(jid).catch((error) =>
+        console.log('loadMessage onWhatsApp error', error)
+      );
+      onWhatsApp && (message = await this.retryOperation(async () => {
+        return  await this.repos.messages.findOne({
+          where: {
+            msgId: id,
+            dictionary: {
+              jid: onWhatsApp[0].lid,
+              DBAuth: { id: this.auth.id }
+            },
+          },
+        })
+      }));
+    }
 
     return message;
   };
