@@ -211,7 +211,7 @@ export default class StoreHandle {
    */
   private extractJidFromKey = (key: WAMessageKey): string => {
     // Prioriza remoteJidAlt se disponível (para DMs com LID)
-    if (key.remoteJidAlt) {
+    if (key.remoteJidAlt && this.isPnJid(key.remoteJidAlt)) {
       return this.normalizeJid(key.remoteJidAlt);
     }
     return this.normalizeJid(key.remoteJid!);
